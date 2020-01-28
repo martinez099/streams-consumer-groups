@@ -3,14 +3,18 @@ package com.redislabs.demo.streams;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.logging.Logger;
+
 public class Producer extends Agent {
+
+    private static Logger logger = Logger.getLogger(Producer.class.getName());
 
     public Producer(String url) {
         super(url);
     }
 
     void produce(int amount) {
-        System.out.println( String.format("\n Sending %s message(s)", amount));
+        logger.info( String.format("Sending %s message(s)", amount));
 
         for (int i = 0 ; i < amount ; i++) {
 
@@ -22,12 +26,8 @@ public class Producer extends Agent {
 
             String messageId = syncCommands.xadd(STREAMS_NAME, messageBody);
 
-            System.out.println(String.format("\tMessage %s : %s posted", messageId, messageBody));
+            logger.info(String.format("Message %s : %s posted", messageId, messageBody));
         }
 
-        System.out.println("\n");
-
-        connection.close();
-        redisClient.shutdown();
     }
 }

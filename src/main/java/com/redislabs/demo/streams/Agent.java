@@ -4,12 +4,15 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 
+import java.util.logging.Logger;
 
 public class Agent {
 
-    static String REDIS_URL = "redis://localhost:6379";
+    private static Logger logger = Logger.getLogger(Agent.class.getName());
 
-    static String STREAMS_NAME = "aStream";
+    static final String REDIS_URL = "redis://localhost:6379";
+
+    static final String STREAMS_NAME = "aStream";
 
     RedisClient redisClient;
     StatefulRedisConnection<String, String> connection;
@@ -22,7 +25,7 @@ public class Agent {
     }
 
     static void printUsage() {
-        System.out.println("USAGE: Agent [produce [amount] | consume]");
+        logger.info("USAGE: Agent [produce amount | consume name group]");
     }
 
     public static void main(String[] args) {
@@ -35,17 +38,23 @@ public class Agent {
         String command = args[0];
 
         if (command.equals("produce")) {
-            int amount = 1;
-            if (args.length == 2) {
-                amount = Integer.valueOf(args[1]);
-            }
+            int amount = Integer.valueOf(args[1]);
 
             Producer producer = new Producer(REDIS_URL);
             producer.produce(amount);
 
+            producer.connection.close();
+            producer.redisClient.shutdown();
+
         } else if (command.equals("consume")) {
-            Consumer consumer = new Consumer(REDIS_URL);
-            consumer.consume();
+            String name = args[1];
+            String group = args[2];
+
+            Consumer consumer = new Consumer(REDIS_URL, group);
+            consumer.consume(name);
+
+            consumer.connection.close();
+            consumer.redisClient.shutdown();
 
         } else {
             printUsage();
