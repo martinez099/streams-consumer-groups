@@ -18,7 +18,6 @@ public class Producer extends Agent {
     public void run() {
         logger.info("Producer running ...");
 
-
         try {
             while (true) {
                 Map<String, String> messageBody = new HashMap<>();
@@ -42,14 +41,20 @@ public class Producer extends Agent {
                 e.printStackTrace();
             }
         }
-
-
-
     }
 
     @Override
     public void close() throws IOException {
         super.close();
         logger.info("Producer closed.");
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 0) {
+            logger.info("USAGE: Producer");
+            System.exit(1);
+        }
+        Producer producer = new Producer(REDIS_URL);
+        producer.executor.submit(producer);
     }
 }

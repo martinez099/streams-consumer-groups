@@ -20,6 +20,8 @@ public abstract class Agent implements Runnable, Closeable {
 
     static final Random RANDOM = new Random();
 
+    static final String ALPHA_NUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
     RedisClient redisClient;
 
     StatefulRedisConnection<String, String> connection;
@@ -28,8 +30,6 @@ public abstract class Agent implements Runnable, Closeable {
 
     ThreadPoolExecutor executor;
 
-    static final String ALPHA_NUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
     Agent(String url) {
         redisClient = RedisClient.create(url);
         connection = redisClient.connect();
@@ -37,55 +37,22 @@ public abstract class Agent implements Runnable, Closeable {
         executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
     }
 
-    static String randomAlphaNumeric(int count) {
+    static String getRandomAlphaNumeric(int count) {
         StringBuilder builder = new StringBuilder();
         while (count-- != 0) {
             int character = (int)(RANDOM.nextDouble()*ALPHA_NUMERIC_STRING.length());
             builder.append(ALPHA_NUMERIC_STRING.charAt(character));
         }
+
         return builder.toString();
     }
 
     static int getRandomInt(int min, int max) {
-
         if (min >= max) {
             throw new IllegalArgumentException("max must be greater than min");
         }
 
         return RANDOM.nextInt((max - min) + 1) + min;
-    }
-
-    static void printUsage() {
-        logger.info("USAGE: Agent [produce | consume group size]");
-    }
-
-    public static void main(String[] args) {
-
-        if (args.length == 0) {
-            printUsage();
-            System.exit(1);
-        }
-
-        String command = args[0];
-
-        if (command.equals("produce")) {
-            Producer producer = new Producer(REDIS_URL);
-            producer.executor.submit(producer);
-
-        } else if (command.equals("consume")) {
-            String group = args[1];
-            int size = Integer.valueOf(args[2]);
-
-            for(int i = 0; i < size; i++) {
-                Consumer consumer = new Consumer(REDIS_URL, group);
-                consumer.executor.submit(consumer);
-            }
-
-        } else {
-            printUsage();
-            System.exit(1);
-
-        }
     }
 
     @Override
