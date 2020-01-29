@@ -50,6 +50,7 @@ public class Consumer extends Agent {
             List idle_list = (List) idle;
             String from = String.valueOf(idle_list.get(0));
             int count = Math.min(Integer.valueOf(String.valueOf(idle_list.get(1))), max_count);
+
             while (true) {
                 if (!from.equals(name)) {
                     List idle_msgs = syncCommands.xpending(STREAM_NAME, io.lettuce.core.Consumer.from(group, from), Range.unbounded(), Limit.from(count));
@@ -88,6 +89,7 @@ public class Consumer extends Agent {
             claim_idle(1000, 10);
             process_pending();
             List<StreamMessage<String, String>> messages;
+
             while (true) {
                 messages = syncCommands.xreadgroup(
                         io.lettuce.core.Consumer.from(group, name), XReadArgs.Builder.block(1000),
