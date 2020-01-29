@@ -10,13 +10,16 @@ public class Producer extends Agent {
 
     private static Logger logger = Logger.getLogger(Producer.class.getName());
 
-    Producer(String url) {
+    int number;
+
+    Producer(String url, int nr) {
         super(url);
+        this.number = nr;
     }
 
     @Override
     public void run() {
-        logger.info("Producer running ...");
+        logger.info(String.format("Producer %s running ...", number));
 
         try {
             while (true) {
@@ -27,7 +30,7 @@ public class Producer extends Agent {
 
                 String messageId = syncCommands.xadd(STREAM_NAME, messageBody);
 
-                logger.info(String.format("Message with ID '%s' produced.", messageId));
+                logger.info(String.format("Producer %d produced message with ID '%s'", number, messageId));
 
                 Thread.sleep(getRandomInt(10, 100));
 
@@ -46,15 +49,18 @@ public class Producer extends Agent {
     @Override
     public void close() throws IOException {
         super.close();
-        logger.info("Producer closed.");
+        logger.info(String.format("Producer %d closed.", number));
     }
 
     public static void main(String[] args) {
-        if (args.length != 0) {
-            logger.info("USAGE: Producer");
+        if (args.length != 1) {
+            logger.info("USAGE: Producer amount");
             System.exit(1);
         }
-        Producer producer = new Producer(REDIS_URL);
-        producer.executor.submit(producer);
+        int size = Integer.valueOf(args[0]);
+        for(int i = 1; i <= size; i++) {
+            Producer producer = new Producer(REDIS_URL, i);
+            producer.executor.submit(producer);
+        }
     }
 }

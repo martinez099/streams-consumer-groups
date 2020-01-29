@@ -6,13 +6,10 @@ import io.lettuce.core.api.sync.RedisCommands;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.*;
+import java.util.Random;
 import java.util.concurrent.*;
-import java.util.logging.Logger;
 
 public abstract class Agent implements Runnable, Closeable {
-
-    private static Logger logger = Logger.getLogger(Agent.class.getName());
 
     static final String REDIS_URL = "redis://localhost:6379";
 

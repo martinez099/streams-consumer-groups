@@ -32,12 +32,12 @@ public class Consumer extends Agent {
             );
             logger.info(String.format("Consumer '%s' created group '%s': %s", name, group, ret));
         } catch (RedisBusyException redisBusyException) {
-            // ignore
+            logger.info(String.format("Consumer group '%s' already present.", group));
         }
     }
 
     void process(StreamMessage message) {
-        logger.info(String.format("Message with ID '%s' consumed by %s.", message.getId(), name));
+        logger.info(String.format("Consumer '%s' consumed message with ID '%s'.", name, message.getId()));
     }
 
     void ack(StreamMessage message) {
@@ -115,8 +115,6 @@ public class Consumer extends Agent {
                 e.printStackTrace();
             }
         }
-
-
     }
 
     @Override
