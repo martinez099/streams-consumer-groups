@@ -4,10 +4,13 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 
-import java.util.Random;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
-public class Agent {
+public abstract class Agent implements Runnable, Closeable {
 
     private static Logger logger = Logger.getLogger(Agent.class.getName());
 
@@ -18,24 +21,29 @@ public class Agent {
     static final Random RANDOM = new Random();
 
     RedisClient redisClient;
+
     StatefulRedisConnection<String, String> connection;
+
     RedisCommands<String, String> syncCommands;
 
-    private static final String ALPHA_NUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    ThreadPoolExecutor executor;
 
-    public static String randomAlphaNumeric(int count) {
-        StringBuilder builder = new StringBuilder();
-        while (count-- != 0) {
-            int character = (int)(Math.random()*ALPHA_NUMERIC_STRING.length());
-            builder.append(ALPHA_NUMERIC_STRING.charAt(character));
-        }
-        return builder.toString();
-    }
+    static final String ALPHA_NUMERIC_STRING = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     Agent(String url) {
         redisClient = RedisClient.create(url);
         connection = redisClient.connect();
         syncCommands = connection.sync();
+        executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+    }
+
+    static String randomAlphaNumeric(int count) {
+        StringBuilder builder = new StringBuilder();
+        while (count-- != 0) {
+            int character = (int)(RANDOM.nextDouble()*ALPHA_NUMERIC_STRING.length());
+            builder.append(ALPHA_NUMERIC_STRING.charAt(character));
+        }
+        return builder.toString();
     }
 
     static int getRandomInt(int min, int max) {
@@ -48,7 +56,7 @@ public class Agent {
     }
 
     static void printUsage() {
-        logger.info("USAGE: Agent [ produce | consume group ]");
+        logger.info("USAGE: Agent [produce | consume group size]");
     }
 
     public static void main(String[] args) {
@@ -61,36 +69,30 @@ public class Agent {
         String command = args[0];
 
         if (command.equals("produce")) {
-
             Producer producer = new Producer(REDIS_URL);
-            try {
-                producer.produce();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            producer.connection.close();
-            producer.redisClient.shutdown();
+            producer.executor.submit(producer);
 
         } else if (command.equals("consume")) {
             String group = args[1];
+            int size = Integer.valueOf(args[2]);
 
-            Consumer consumer = new Consumer(REDIS_URL, group);
-            try {
-                consumer.consume();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            for(int i = 0; i < size; i++) {
+                Consumer consumer = new Consumer(REDIS_URL, group);
+                consumer.executor.submit(consumer);
             }
-
-            consumer.connection.close();
-            consumer.redisClient.shutdown();
 
         } else {
             printUsage();
             System.exit(1);
 
         }
+    }
 
+    @Override
+    public void close() throws IOException {
+        connection.close();
+        redisClient.shutdown();
+        executor.shutdown();
     }
 
 }

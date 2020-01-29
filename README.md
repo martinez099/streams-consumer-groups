@@ -19,6 +19,7 @@ a sample showing Redis Streams with consumer groups in action
 
 ### Consumer groups
 
-- `mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group1"`
-- `mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group2"`
-- `mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group3"`
+- ```mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group1 3"```
+- ```mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group2 3"```
+- ```mvn exec:java -Dexec.mainClass="com.redislabs.demo.streams.consumergroups.Agent" -Dexec.classpathScope=runtime -Dexec.args="consume group3 3"```
+

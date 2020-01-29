@@ -1,5 +1,6 @@
 package com.redislabs.demo.streams.consumergroups;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,27 +10,46 @@ public class Producer extends Agent {
 
     private static Logger logger = Logger.getLogger(Producer.class.getName());
 
-    public Producer(String url) {
+    Producer(String url) {
         super(url);
     }
 
-    void produce() throws InterruptedException {
-        logger.info("Producing messages ...");
+    @Override
+    public void run() {
+        logger.info("Producer running ...");
 
-        while (true) {
 
-            Map<String, String> messageBody = new HashMap<>();
-            messageBody.put("speed", String.valueOf(getRandomInt(0, 500)));
-            messageBody.put("direction", String.valueOf(getRandomInt(0, 360)));
-            messageBody.put("sensor_ts", String.valueOf(System.currentTimeMillis()));
+        try {
+            while (true) {
+                Map<String, String> messageBody = new HashMap<>();
+                messageBody.put("speed", String.valueOf(getRandomInt(0, 500)));
+                messageBody.put("direction", String.valueOf(getRandomInt(0, 360)));
+                messageBody.put("sensor_ts", String.valueOf(System.currentTimeMillis()));
 
-            String messageId = syncCommands.xadd(STREAM_NAME, messageBody);
+                String messageId = syncCommands.xadd(STREAM_NAME, messageBody);
 
-            logger.info(String.format("Message %s : %s produced", messageId, messageBody));
+                logger.info(String.format("Message with ID '%s' produced.", messageId));
 
-            Thread.sleep(getRandomInt(100, 1000));
+                Thread.sleep(getRandomInt(10, 100));
 
+            }
+        } catch (Exception e) {
+            logger.severe(e.getMessage());
+        } finally {
+            try {
+                close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
+
+
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+        logger.info("Producer closed.");
     }
 }
