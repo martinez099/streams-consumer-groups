@@ -4,14 +4,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Producer class.
  */
 public class Producer extends Agent {
 
-    private static Logger logger = Logger.getLogger(Producer.class.getName());
+    private static Logger LOGGER = LoggerFactory.getLogger(Producer.class.getName());
 
     int number;
 
@@ -26,7 +27,7 @@ public class Producer extends Agent {
 
     @Override
     public void run() {
-        logger.info(String.format("Producer %s running ...", number));
+        LOGGER.info(String.format("Producer %s running ...", number));
 
         try {
             while (true) {
@@ -37,13 +38,13 @@ public class Producer extends Agent {
 
                 String messageId = syncCommands.xadd(STREAM_NAME, messageBody);
 
-                logger.info(String.format("Producer %d produced message with ID '%s'", number, messageId));
+                LOGGER.info(String.format("Producer %d produced message with ID '%s'", number, messageId));
 
                 Thread.sleep(getRandomInt(10, 100));
 
             }
         } catch (Exception e) {
-            logger.severe(e.getMessage());
+            LOGGER.error(e.getMessage());
         } finally {
             try {
                 close();
@@ -56,12 +57,12 @@ public class Producer extends Agent {
     @Override
     public void close() throws IOException {
         super.close();
-        logger.info(String.format("Producer %d closed.", number));
+        LOGGER.info(String.format("Producer %d closed.", number));
     }
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            logger.info("USAGE: Producer amount");
+            LOGGER.info("USAGE: Producer amount");
             System.exit(1);
         }
         int size = Integer.valueOf(args[0]);

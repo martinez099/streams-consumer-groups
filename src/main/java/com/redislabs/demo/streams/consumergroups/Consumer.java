@@ -9,16 +9,19 @@ import io.lettuce.core.XReadArgs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Logger;
-
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Consumer class.
  */
+@SuppressWarnings({"unchecked"})
 public class Consumer extends Agent {
 
-    private static Logger logger = Logger.getLogger(Consumer.class.getName());
+    private static Logger LOGGER = LoggerFactory.getLogger(Consumer.class.getName());
 
     private String name = getRandomAlphaNumeric(10);
 
@@ -38,16 +41,16 @@ public class Consumer extends Agent {
      * Create the consumer group iff it's not done already.
      */
     void init() {
-        logger.info(String.format("Consumer '%s' init ...", name));
+        LOGGER.info(String.format("Consumer '%s' init ...", name));
         try {
             String ret = syncCommands.xgroupCreate(
                     XReadArgs.StreamOffset.from(STREAM_NAME, "0"),
                     group,
                     XGroupCreateArgs.Builder.mkstream()
             );
-            logger.info(String.format("Consumer '%s' created group '%s': %s", name, group, ret));
+            LOGGER.info(String.format("Consumer '%s' created group '%s': %s", name, group, ret));
         } catch (RedisBusyException redisBusyException) {
-            logger.info(String.format("Consumer group '%s' already present.", group));
+            LOGGER.info(String.format("Consumer group '%s' already present.", group));
         }
     }
 
@@ -57,7 +60,7 @@ public class Consumer extends Agent {
      * @param message The message.
      */
     void process(StreamMessage<String, String> message) {
-        logger.info(String.format("Consumer '%s' consumed message with ID '%s'.", name, message.getId()));
+        LOGGER.info(String.format("Consumer '%s' consumed message with ID '%s'.", name, message.getId()));
     }
 
     /**
@@ -93,7 +96,7 @@ public class Consumer extends Agent {
                     }
                     List<StreamMessage<String, String>> claims = syncCommands.xclaim(STREAM_NAME, io.lettuce.core.Consumer.from(group, name), min_idle_time, pending_msg_ids.toArray(new String[0]));
                     for (StreamMessage<String, String> claimed : claims) {
-                        logger.info(String.format("Consumer '%s' cla1imed message with ID '%s'.", name, claimed.getId()));
+                        LOGGER.info(String.format("Consumer '%s' cla1imed message with ID '%s'.", name, claimed.getId()));
                     }
                 }
             }
@@ -116,7 +119,7 @@ public class Consumer extends Agent {
 
     @Override
     public void run() {
-        logger.info(String.format("Consumer '%s' running ...", name));
+        LOGGER.info(String.format("Consumer '%s' running ...", name));
 
         try {
             claim_idle(1000, 10);
@@ -141,7 +144,7 @@ public class Consumer extends Agent {
                 Thread.sleep(getRandomInt(100, 1000));
             }
         } catch (Exception e) {
-            logger.severe(e.getMessage());
+            LOGGER.error(e.getMessage());
         } finally {
             syncCommands.xgroupDelconsumer(STREAM_NAME, io.lettuce.core.Consumer.from(group, name));
             try {
@@ -155,12 +158,12 @@ public class Consumer extends Agent {
     @Override
     public void close() throws IOException {
         super.close();
-        logger.info(String.format("Consumer '%s' closed.", name));
+        LOGGER.info(String.format("Consumer '%s' closed.", name));
     }
 
     public static void main(String[] args) {
         if (args.length != 2) {
-            logger.info("USAGE: Consumer group size");
+            LOGGER.info("USAGE: Consumer group size");
             System.exit(1);
         }
         String group = args[0];
