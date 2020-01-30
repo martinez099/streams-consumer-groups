@@ -6,12 +6,19 @@ import java.util.Map;
 
 import java.util.logging.Logger;
 
+/**
+ * Producer class.
+ */
 public class Producer extends Agent {
 
     private static Logger logger = Logger.getLogger(Producer.class.getName());
 
     int number;
 
+    /**
+     * @param url A Redis URL.
+     * @param nr An ordinal number.
+     */
     Producer(String url, int nr) {
         super(url);
         this.number = nr;

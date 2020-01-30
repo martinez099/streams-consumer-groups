@@ -1,6 +1,11 @@
 package com.redislabs.demo.streams.consumergroups;
 
-import io.lettuce.core.*;
+import io.lettuce.core.Limit;
+import io.lettuce.core.Range;
+import io.lettuce.core.RedisBusyException;
+import io.lettuce.core.StreamMessage;
+import io.lettuce.core.XGroupCreateArgs;
+import io.lettuce.core.XReadArgs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,6 +13,9 @@ import java.util.logging.Logger;
 
 import java.util.List;
 
+/**
+ * Consumer class.
+ */
 public class Consumer extends Agent {
 
     private static Logger logger = Logger.getLogger(Consumer.class.getName());
@@ -16,12 +24,19 @@ public class Consumer extends Agent {
 
     private String group;
 
+    /**
+     * @param url A Redis URL.
+     * @param group A consumer group name.
+     */
     Consumer(String url, String group) {
         super(url);
         this.group = group;
         this.init();
     }
 
+    /**
+     * Create the consumer group iff it's not done already.
+     */
     void init() {
         logger.info(String.format("Consumer '%s' init ...", name));
         try {
@@ -36,32 +51,48 @@ public class Consumer extends Agent {
         }
     }
 
-    void process(StreamMessage message) {
+    /**
+     * Process a message.
+     *
+     * @param message The message.
+     */
+    void process(StreamMessage<String, String> message) {
         logger.info(String.format("Consumer '%s' consumed message with ID '%s'.", name, message.getId()));
     }
 
-    void ack(StreamMessage message) {
+    /**
+     * Acknowledge a message.
+     *
+     * @param message The message.
+     */
+    void ack(StreamMessage<String, String> message) {
         syncCommands.xack(STREAM_NAME, group, message.getId());
     }
 
+    /**
+     * Claim all pending messages from other consumers.
+     *
+     * @param min_idle_time Minimum idle time of messages to claim in ms.
+     * @param max_count Maximum amount of messages to claim at once.
+     */
     void claim_idle(int min_idle_time, int max_count) {
-        List pending_consumers = syncCommands.xpending(STREAM_NAME, group, Range.unbounded(), Limit.unlimited());
-        for (Object pending_consumer : (List) pending_consumers.get(3)) {
-            String consumer = String.valueOf(((List) pending_consumer).get(0));
-            int count = Math.min(Integer.valueOf(String.valueOf(((List) pending_consumer).get(1))), max_count);
+        List<Object> pending_consumers = syncCommands.xpending(STREAM_NAME, group, Range.unbounded(), Limit.unlimited());
+        for (Object pending_consumer : (List<String>) pending_consumers.get(3)) {
+            String consumer = String.valueOf(((List<String>) pending_consumer).get(0));
+            int count = Math.min(Integer.parseInt(String.valueOf(((List<String>) pending_consumer).get(1))), max_count);
 
             while (true) {
                 if (!consumer.equals(name)) {
-                    List pending_msgs = syncCommands.xpending(STREAM_NAME, io.lettuce.core.Consumer.from(group, consumer), Range.unbounded(), Limit.from(count));
+                    List<Object> pending_msgs = syncCommands.xpending(STREAM_NAME, io.lettuce.core.Consumer.from(group, consumer), Range.unbounded(), Limit.from(count));
                     if (pending_msgs.isEmpty()) {
                         break;
                     }
                     List<String> pending_msg_ids = new ArrayList<>();
                     for (Object pending_msg : pending_msgs) {
-                        pending_msg_ids.add(String.valueOf(((List) pending_msg).get(0)));
+                        pending_msg_ids.add(String.valueOf(((List<String>) pending_msg).get(0)));
                     }
                     List<StreamMessage<String, String>> claims = syncCommands.xclaim(STREAM_NAME, io.lettuce.core.Consumer.from(group, name), min_idle_time, pending_msg_ids.toArray(new String[0]));
-                    for (StreamMessage claimed : claims) {
+                    for (StreamMessage<String, String> claimed : claims) {
                         logger.info(String.format("Consumer '%s' cla1imed message with ID '%s'.", name, claimed.getId()));
                     }
                 }
@@ -69,12 +100,15 @@ public class Consumer extends Agent {
         }
     }
 
+    /**
+     * Process pending messages.
+     */
     void process_pending() {
         List<StreamMessage<String, String>> messages = syncCommands.xreadgroup(
                 io.lettuce.core.Consumer.from(group, name),
                 XReadArgs.StreamOffset.from(STREAM_NAME, "0")
         );
-        for (StreamMessage message : messages) {
+        for (StreamMessage<String, String> message : messages) {
             process(message);
             ack(message);
         }
@@ -94,7 +128,7 @@ public class Consumer extends Agent {
                         XReadArgs.StreamOffset.lastConsumed(STREAM_NAME)
                 );
 
-                for (StreamMessage message : messages) {
+                for (StreamMessage<String, String> message : messages) {
                     process(message);
 
                     if (RANDOM.nextInt() < (Integer.MAX_VALUE - 100000000)) {
@@ -109,6 +143,7 @@ public class Consumer extends Agent {
         } catch (Exception e) {
             logger.severe(e.getMessage());
         } finally {
+            syncCommands.xgroupDelconsumer(STREAM_NAME, io.lettuce.core.Consumer.from(group, name));
             try {
                 close();
             } catch (IOException e) {
@@ -129,7 +164,7 @@ public class Consumer extends Agent {
             System.exit(1);
         }
         String group = args[0];
-        int size = Integer.valueOf(args[1]);
+        int size = Integer.parseInt(args[1]);
         for(int i = 0; i < size; i++) {
             Consumer consumer = new Consumer(REDIS_URL, group);
             consumer.executor.submit(consumer);

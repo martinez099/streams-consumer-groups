@@ -34,6 +34,12 @@ public abstract class Agent implements Runnable, Closeable {
         executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
     }
 
+    /**
+     * Get a pseudorandom alpha-numeric string.
+     *
+     * @param count The length of the string.
+     * @return The string.
+     */
     static String getRandomAlphaNumeric(int count) {
         StringBuilder builder = new StringBuilder();
         while (count-- != 0) {
@@ -44,6 +50,13 @@ public abstract class Agent implements Runnable, Closeable {
         return builder.toString();
     }
 
+    /**
+     * Get a pseudorandom integer.
+     *
+     * @param min Lower boundary of the integer.
+     * @param max Upper boundary of the integer.
+     * @return The integer.
+     */
     static int getRandomInt(int min, int max) {
         if (min >= max) {
             throw new IllegalArgumentException("max must be greater than min");
