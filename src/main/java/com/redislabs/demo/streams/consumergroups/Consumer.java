@@ -88,6 +88,7 @@ public class Consumer extends Agent {
                 if (!consumer.equals(name)) {
                     List<Object> pending_msgs = syncCommands.xpending(STREAM_NAME, io.lettuce.core.Consumer.from(group, consumer), Range.unbounded(), Limit.from(count));
                     if (pending_msgs.isEmpty()) {
+                        syncCommands.xgroupDelconsumer(STREAM_NAME, io.lettuce.core.Consumer.from(group, consumer));
                         break;
                     }
                     List<String> pending_msg_ids = new ArrayList<>();
@@ -96,7 +97,7 @@ public class Consumer extends Agent {
                     }
                     List<StreamMessage<String, String>> claims = syncCommands.xclaim(STREAM_NAME, io.lettuce.core.Consumer.from(group, name), min_idle_time, pending_msg_ids.toArray(new String[0]));
                     for (StreamMessage<String, String> claimed : claims) {
-                        LOGGER.info(String.format("Consumer '%s' cla1imed message with ID '%s'.", name, claimed.getId()));
+                        LOGGER.info(String.format("Consumer '%s' claimed message with ID '%s'.", name, claimed.getId()));
                     }
                 }
             }
@@ -146,7 +147,6 @@ public class Consumer extends Agent {
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
         } finally {
-            syncCommands.xgroupDelconsumer(STREAM_NAME, io.lettuce.core.Consumer.from(group, name));
             try {
                 close();
             } catch (IOException e) {

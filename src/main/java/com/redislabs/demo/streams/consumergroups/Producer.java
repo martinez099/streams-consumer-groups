@@ -41,7 +41,6 @@ public class Producer extends Agent {
                 LOGGER.info(String.format("Producer %d produced message with ID '%s'", number, messageId));
 
                 Thread.sleep(getRandomInt(10, 100));
-
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
